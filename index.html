@@ -227,7 +227,7 @@
             padding-bottom: 5px;
         }
 
-        /* 印刷設定 (A4・はみ出し防止) */
+        /* 印刷設定 (A4・左右の余白を安全に確保するための完全修正) */
         @media print {
             body {
                 background: none;
@@ -242,27 +242,28 @@
             }
             @page {
                 size: A4 portrait;
-                margin: 8mm; /* 余白を調整してカードエリアを確保 */
+                margin: 0; /* ブラウザ自体のマージンを無効化し、こちらで完全に内側に配置する */
             }
             .page {
                 page-break-after: always;
                 page-break-inside: avoid;
-                width: 100%;
-                height: 275mm; /* A4の印字可能領域内に収める */
+                width: 210mm;
+                height: 297mm;
                 box-sizing: border-box;
+                /* 左右に「18mm」の余裕を持たせ、完全に中央に収める */
+                padding: 12mm 18mm; 
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
-            .sheet-preview {
+            .sheet-print-grid {
                 display: grid !important;
                 grid-template-columns: repeat(3, 1fr) !important;
                 grid-template-rows: repeat(3, 1fr) !important;
-                gap: 6mm !important;
-                width: 100% !important;
-                height: 100% !important;
-                max-width: none !important;
-                aspect-ratio: auto !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-                border: none !important;
+                gap: 5mm !important;
+                width: 174mm !important; /* 210mm - 左右18mm*2 = 174mm */
+                height: 273mm !important; /* 297mm - 上下12mm*2 = 273mm */
+                margin: 0 auto !important;
             }
             .card-cell {
                 border: 2px solid #2c3e50 !important;
@@ -272,12 +273,12 @@
                 box-sizing: border-box !important;
             }
             .card-cell .main-text {
-                font-size: 12pt !important;
-                min-height: 22pt !important;
+                font-size: 11pt !important;
+                min-height: 20pt !important;
                 margin-bottom: 2mm !important;
             }
             .card-cell .img-container {
-                height: calc(100% - 26pt) !important;
+                height: calc(100% - 24pt) !important;
             }
         }
     </style>
@@ -585,8 +586,9 @@ fine 晴れた"></textarea>
         document.getElementById('frontPreview').innerHTML = frontHtml;
         document.getElementById('backPreview').innerHTML = backHtml;
         
-        document.getElementById('printFront').innerHTML = `<div class="sheet-preview">${frontHtml}</div>`;
-        document.getElementById('printBack').innerHTML = `<div class="sheet-preview">${backHtml}</div>`;
+        // 印刷用は専用クラスのグリッドで囲む
+        document.getElementById('printFront').innerHTML = `<div class="sheet-print-grid">${frontHtml}</div>`;
+        document.getElementById('printBack').innerHTML = `<div class="sheet-print-grid">${backHtml}</div>`;
     }
 
     window.onload = initEditor;
