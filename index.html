@@ -154,28 +154,8 @@
         .print-section {
             display: none;
         }
-        @media print {
-            body {
-                background: none;
-                padding: 0;
-            }
-            .container {
-                display: none;
-            }
-            .print-section {
-                display: block;
-            }
-            @page {
-                size: A4 portrait;
-                margin: 10mm;
-            }
-            .page {
-                page-break-after: always;
-                width: 210mm;
-                height: 297mm;
-                padding: 10mm;
-            }
-        }
+
+        /* 画面プレビュー用スタイル */
         .preview-box {
             border: 2px dashed #bdc3c7;
             padding: 15px;
@@ -203,17 +183,18 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding: 8px;
+            padding: 6px;
             background: #fff;
+            overflow: hidden;
         }
         .card-cell .main-text {
             font-size: 13px;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             text-align: center;
             line-height: 1.2;
-            min-height: 32px;
+            min-height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -244,6 +225,60 @@
             margin-bottom: 10px;
             border-bottom: 2px solid #eaeaea;
             padding-bottom: 5px;
+        }
+
+        /* 印刷設定 (A4・はみ出し防止) */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+            }
+            .container {
+                display: none !important;
+            }
+            .print-section {
+                display: block !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 8mm; /* 余白を調整してカードエリアを確保 */
+            }
+            .page {
+                page-break-after: always;
+                page-break-inside: avoid;
+                width: 100%;
+                height: 275mm; /* A4の印字可能領域内に収める */
+                box-sizing: border-box;
+            }
+            .sheet-preview {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                grid-template-rows: repeat(3, 1fr) !important;
+                gap: 6mm !important;
+                width: 100% !important;
+                height: 100% !important;
+                max-width: none !important;
+                aspect-ratio: auto !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .card-cell {
+                border: 2px solid #2c3e50 !important;
+                border-radius: 6px !important;
+                padding: 4mm !important;
+                height: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .card-cell .main-text {
+                font-size: 12pt !important;
+                min-height: 22pt !important;
+                margin-bottom: 2mm !important;
+            }
+            .card-cell .img-container {
+                height: calc(100% - 26pt) !important;
+            }
         }
     </style>
 </head>
@@ -379,12 +414,10 @@ fine 晴れた"></textarea>
         updatePreview();
     }
 
-    // 貼り付けテキストを高度に解析して英語と日本語に分ける関数
     function parseLine(line) {
         line = line.trim();
         if (!line) return { ja: "", en: "" };
 
-        // 1. タブ区切り（エクセルコピペ）
         if (line.includes('\t')) {
             const parts = line.split('\t').map(p => p.trim()).filter(Boolean);
             if (parts.length >= 2) {
@@ -393,17 +426,14 @@ fine 晴れた"></textarea>
             }
         }
 
-        // 2. スペース（半角/全角）で分割
         const tokens = line.split(/[\s ]+/).filter(Boolean);
         if (tokens.length >= 2) {
-            // 先頭トークンが英語（アルファベット＋記号のみ）の場合
             if (isEnglish(tokens[0])) {
                 return {
                     en: tokens[0],
                     ja: tokens.slice(1).join(' ')
                 };
             }
-            // 末尾トークンが英語の場合
             if (isEnglish(tokens[tokens.length - 1])) {
                 return {
                     ja: tokens.slice(0, tokens.length - 1).join(' '),
@@ -412,27 +442,22 @@ fine 晴れた"></textarea>
             }
         }
 
-        // 分離できない場合（日本語のみなど）
         return { ja: line, en: "" };
     }
 
-    // アルファベット中心の文字列かどうか判定する補助関数
     function isEnglish(text) {
         return /^[A-Za-z0-9\s\?\!\.,'-]+$/.test(text);
     }
 
-    // 一括反映処理（前回のデータを一度リセットして綺麗な状態にする）
     function importBatchText() {
         const text = document.getElementById('batchInput').value.trim();
         if (!text) return;
 
-        // 既存の入力欄を一旦クリア
         for (let i = 0; i < 9; i++) {
             document.getElementById('ja_' + i).value = "";
             document.getElementById('en_' + i).value = "";
         }
 
-        // 改行で分割
         const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
         lines.forEach((line, index) => {
@@ -444,7 +469,7 @@ fine 晴れた"></textarea>
         });
 
         updatePreview();
-        alert('9つの入力欄に綺麗に分離して反映しました！');
+        alert('9つの入力欄に一括反映しました！');
     }
 
     function handleSheetUpload(event) {
@@ -560,8 +585,8 @@ fine 晴れた"></textarea>
         document.getElementById('frontPreview').innerHTML = frontHtml;
         document.getElementById('backPreview').innerHTML = backHtml;
         
-        document.getElementById('printFront').innerHTML = `<div class="sheet-preview" style="width:100%;height:100%;box-shadow:none;border:none;">${frontHtml}</div>`;
-        document.getElementById('printBack').innerHTML = `<div class="sheet-preview" style="width:100%;height:100%;box-shadow:none;border:none;">${backHtml}</div>`;
+        document.getElementById('printFront').innerHTML = `<div class="sheet-preview">${frontHtml}</div>`;
+        document.getElementById('printBack').innerHTML = `<div class="sheet-preview">${backHtml}</div>`;
     }
 
     window.onload = initEditor;
