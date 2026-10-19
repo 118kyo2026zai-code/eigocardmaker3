@@ -55,7 +55,7 @@
         }
         textarea.batch-textarea {
             width: 100%;
-            height: 90px;
+            height: 110px;
             padding: 8px;
             font-size: 13px;
             border: 1px solid #ccc;
@@ -257,18 +257,18 @@
     <div class="batch-import-box" style="margin-bottom: 20px;">
         <h3>★ 9つの単語/フレーズを一括貼り付け（サイトやエクセルからコピペ）</h3>
         <div style="font-size: 12px; color: #555; margin-top: 3px;">
-            改行で区切って9つ貼り付けます。「日本語 英語」や「日本語 [Tab] 英語」の形式にも対応しています。
+            Webサイトやエクセルから9行まとめてコピーして貼り付け、「一括反映」を押してください。
         </div>
-        <textarea id="batchInput" class="batch-textarea" placeholder="例1（1行に日本語と英語）:
-本当？ Really?
-どれくらいゲームをしているの？ How long do you play?
-...
-
-例2（日本語のみ9行）:
-走る
-運転する
-飛ぶ
-..."></textarea>
+        <textarea id="batchInput" class="batch-textarea" placeholder="例（英単語サイトからそのままコピペOK）:
+hot 熱い 暑い
+cold 寒い 冷たい
+warm 暖かい
+cool 涼しい
+sunny 日の照っている
+rainy 雨の
+cloudy くもった
+snowy 雪の降る
+fine 晴れた"></textarea>
         <button onclick="importBatchText()" style="font-size: 13px; padding: 6px 14px; margin-top: 8px;">
             9つの入力欄に一括反映する
         </button>
@@ -316,28 +316,16 @@
 
 <script>
     const defaultData = [
-        { ja: "本当？", en: "Really?" },
-        { ja: "どれくらいゲームをしているの？いつも", en: "How long do you usually play games?" },
-        { ja: "３０分くらいです", en: "About 30 minutes." },
-        { ja: "ビデオを取ってきてよ。今度", en: "Take a video next time." },
-        { ja: "あなたはどこの出身ですか？", en: "Where are you from?" },
-        { ja: "もう１回言ってください", en: "Say that again, please." },
-        { ja: "もう少しゆっくりおねがい", en: "Speak more slowly, please." },
-        { ja: "ビデオをとってもいいですか？", en: "Can I take a video?" },
-        { ja: "それはどんなゲームですか？", en: "What kind of game is it?" }
+        { ja: "熱い 暑い", en: "hot" },
+        { ja: "寒い 冷たい", en: "cold" },
+        { ja: "暖かい", en: "warm" },
+        { ja: "涼しい", en: "cool" },
+        { ja: "日の照っている", en: "sunny" },
+        { ja: "雨の", en: "rainy" },
+        { ja: "くもった", en: "cloudy" },
+        { ja: "雪の降る", en: "snowy" },
+        { ja: "晴れた", en: "fine" }
     ];
-
-    const dictionary = {
-        "走る": "run", "はしる": "run",
-        "運転する": "drive", "うんてんする": "drive",
-        "飛ぶ": "fly", "とぶ": "fly",
-        "掘る": "dig", "ほる": "dig",
-        "建てる": "build", "たてる": "build",
-        "登る": "climb", "のぼる": "climb",
-        "食べる": "eat", "たべる": "eat",
-        "飲む": "drink", "のむ": "drink",
-        "読む": "read", "よむ": "read"
-    };
 
     const cardImages = {};
     const editorGrid = document.getElementById('editorGrid');
@@ -362,21 +350,6 @@
             jaInput.value = defaultData[i].ja;
 
             jaInput.addEventListener('input', function() {
-                const val = jaInput.value.trim();
-                const enInput = document.getElementById("en_" + i);
-                
-                if (dictionary[val]) {
-                    enInput.value = dictionary[val];
-                } else {
-                    let matched = false;
-                    for (let key in dictionary) {
-                        if (val.includes(key)) {
-                            enInput.value = dictionary[key];
-                            matched = true;
-                            break;
-                        }
-                    }
-                }
                 updatePreview();
             });
 
@@ -406,38 +379,72 @@
         updatePreview();
     }
 
-    // 貼り付けた一括テキストを分析して9つの入力欄に振り分ける機能
+    // 貼り付けテキストを高度に解析して英語と日本語に分ける関数
+    function parseLine(line) {
+        line = line.trim();
+        if (!line) return { ja: "", en: "" };
+
+        // 1. タブ区切り（エクセルコピペ）
+        if (line.includes('\t')) {
+            const parts = line.split('\t').map(p => p.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+                if (isEnglish(parts[0])) return { en: parts[0], ja: parts.slice(1).join(' ') };
+                return { ja: parts[0], en: parts.slice(1).join(' ') };
+            }
+        }
+
+        // 2. スペース（半角/全角）で分割
+        const tokens = line.split(/[\s ]+/).filter(Boolean);
+        if (tokens.length >= 2) {
+            // 先頭トークンが英語（アルファベット＋記号のみ）の場合
+            if (isEnglish(tokens[0])) {
+                return {
+                    en: tokens[0],
+                    ja: tokens.slice(1).join(' ')
+                };
+            }
+            // 末尾トークンが英語の場合
+            if (isEnglish(tokens[tokens.length - 1])) {
+                return {
+                    ja: tokens.slice(0, tokens.length - 1).join(' '),
+                    en: tokens[tokens.length - 1]
+                };
+            }
+        }
+
+        // 分離できない場合（日本語のみなど）
+        return { ja: line, en: "" };
+    }
+
+    // アルファベット中心の文字列かどうか判定する補助関数
+    function isEnglish(text) {
+        return /^[A-Za-z0-9\s\?\!\.,'-]+$/.test(text);
+    }
+
+    // 一括反映処理（前回のデータを一度リセットして綺麗な状態にする）
     function importBatchText() {
         const text = document.getElementById('batchInput').value.trim();
         if (!text) return;
 
-        // 行ごとに分割
-        const lines = text.split('\n').filter(line => line.trim() !== '');
+        // 既存の入力欄を一旦クリア
+        for (let i = 0; i < 9; i++) {
+            document.getElementById('ja_' + i).value = "";
+            document.getElementById('en_' + i).value = "";
+        }
+
+        // 改行で分割
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
         lines.forEach((line, index) => {
-            if (index >= 9) return; // 9個まで
+            if (index >= 9) return;
 
-            const jaInput = document.getElementById('ja_' + index);
-            const enInput = document.getElementById('en_' + index);
-
-            // タブ(エクセルコピペ) または 2個以上のスペース または カンマで区切る
-            let parts = line.split(/\t|,|\s{2,}/);
-
-            if (parts.length >= 2) {
-                jaInput.value = parts[0].trim();
-                enInput.value = parts.slice(1).join(" ").trim();
-            } else {
-                // 区切りがない場合は日本語欄に入れ、辞書を検索
-                const val = line.trim();
-                jaInput.value = val;
-                if (dictionary[val]) {
-                    enInput.value = dictionary[val];
-                }
-            }
+            const parsed = parseLine(line);
+            document.getElementById('ja_' + index).value = parsed.ja;
+            document.getElementById('en_' + index).value = parsed.en;
         });
 
         updatePreview();
-        alert('9個の入力欄に一括反映しました！');
+        alert('9つの入力欄に綺麗に分離して反映しました！');
     }
 
     function handleSheetUpload(event) {
@@ -495,7 +502,7 @@
         const data = getCardData();
         let promptText = "A4 portrait printable sheet containing a 3x3 grid of 9 pure watercolor illustrations. Absolutely NO text, NO letters, NO words, NO Japanese, NO English, NO labels inside the image. Just 9 separate pure drawing panels for the following actions:\n";
         data.forEach((card, idx) => {
-            promptText += (idx + 1) + ". " + card.ja + "\n";
+            promptText += (idx + 1) + ". " + (card.ja || card.en) + "\n";
         });
         promptText += "High quality, beautiful watercolor style, children's educational material style, clean white background.";
         document.getElementById('promptText').value = promptText;
