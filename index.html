@@ -227,7 +227,7 @@
             padding-bottom: 5px;
         }
 
-        /* 印刷設定 (A4・左右の余白を安全に確保するための完全修正) */
+        /* 印刷設定 */
         @media print {
             body {
                 background: none;
@@ -242,7 +242,7 @@
             }
             @page {
                 size: A4 portrait;
-                margin: 0; /* ブラウザ自体のマージンを無効化し、こちらで完全に内側に配置する */
+                margin: 0;
             }
             .page {
                 page-break-after: always;
@@ -250,7 +250,6 @@
                 width: 210mm;
                 height: 297mm;
                 box-sizing: border-box;
-                /* 左右に「18mm」の余裕を持たせ、完全に中央に収める */
                 padding: 12mm 18mm; 
                 display: flex;
                 align-items: center;
@@ -261,8 +260,8 @@
                 grid-template-columns: repeat(3, 1fr) !important;
                 grid-template-rows: repeat(3, 1fr) !important;
                 gap: 5mm !important;
-                width: 174mm !important; /* 210mm - 左右18mm*2 = 174mm */
-                height: 273mm !important; /* 297mm - 上下12mm*2 = 273mm */
+                width: 174mm !important;
+                height: 273mm !important;
                 margin: 0 auto !important;
             }
             .card-cell {
@@ -526,11 +525,11 @@ fine 晴れた"></textarea>
 
     function updatePromptBox() {
         const data = getCardData();
-        let promptText = "A4 portrait printable sheet containing a 3x3 grid of 9 pure watercolor illustrations. Absolutely NO text, NO letters, NO words, NO Japanese, NO English, NO labels inside the image. Just 9 separate pure drawing panels for the following actions:\n";
+        let promptText = "A4 portrait printable sheet containing a 3x3 grid of 9 pure watercolor illustrations. Absolutely NO text, NO letters, NO words, NO Japanese, NO English, NO typography inside the image. STRICTLY ZERO text. Each of the 9 panels must have a clean white border and a clean white background, completely separated by clean white dividing lines. Just 9 separate pure drawing panels for the following actions:\n";
         data.forEach((card, idx) => {
             promptText += (idx + 1) + ". " + (card.ja || card.en) + "\n";
         });
-        promptText += "High quality, beautiful watercolor style, children's educational material style, clean white background.";
+        promptText += "High quality, beautiful watercolor style, children's educational material style.";
         document.getElementById('promptText').value = promptText;
     }
 
@@ -586,7 +585,6 @@ fine 晴れた"></textarea>
         document.getElementById('frontPreview').innerHTML = frontHtml;
         document.getElementById('backPreview').innerHTML = backHtml;
         
-        // 印刷用は専用クラスのグリッドで囲む
         document.getElementById('printFront').innerHTML = `<div class="sheet-print-grid">${frontHtml}</div>`;
         document.getElementById('printBack').innerHTML = `<div class="sheet-print-grid">${backHtml}</div>`;
     }
